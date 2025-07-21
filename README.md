@@ -35,32 +35,58 @@ npm install
    - Create the following tables in your Supabase database:
 
 ```sql
--- Products table
-create table products (
-  id uuid default uuid_generate_v4() primary key,
-  name text not null,
-  description text,
-  cost decimal(10,2) not null,
-  quantity integer not null,
-  category text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- ============================
+-- 1. Categories Table
+-- ============================
+CREATE TABLE IF NOT EXISTS categories (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE
 );
 
--- Sales table
-create table sales (
-  id uuid default uuid_generate_v4() primary key,
-  total decimal(10,2) not null,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- ============================
+-- 2. Suppliers Table
+-- ============================
+CREATE TABLE IF NOT EXISTS suppliers (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  contact TEXT
 );
 
--- Sale items table
-create table sale_items (
-  id uuid default uuid_generate_v4() primary key,
-  sale_id uuid references sales(id) not null,
-  product_id uuid references products(id) not null,
-  quantity integer not null,
-  price decimal(10,2) not null
+-- ============================
+-- 3. Products Table
+-- ============================
+CREATE TABLE IF NOT EXISTS products (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  brand TEXT,
+  category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+  cost_price NUMERIC(10, 2),
+  sell_price NUMERIC(10, 2),
+  quantity INTEGER DEFAULT 0,
+  supplier_id INTEGER REFERENCES suppliers(id) ON DELETE SET NULL
+);
+
+-- ============================
+-- 4. Sales Table (One per bill)
+-- ============================
+CREATE TABLE IF NOT EXISTS sales (
+  id SERIAL PRIMARY KEY,
+  customer_name TEXT,
+  customer_phone TEXT,
+  total_amount NUMERIC(10, 2),
+  sale_date TIMESTAMP DEFAULT NOW()
+);
+
+-- ============================
+-- 5. Sale Items Table (Products in a bill)
+-- ============================
+CREATE TABLE IF NOT EXISTS sale_items (
+  id SERIAL PRIMARY KEY,
+  sale_id INTEGER REFERENCES sales(id) ON DELETE CASCADE,
+  product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
+  quantity_sold INTEGER NOT NULL,
+  sell_price NUMERIC(10, 2),     -- unit price at time of sale
+  total_price NUMERIC(10, 2)     -- quantity × sell_price
 );
 
 -- Function to decrement product quantity
