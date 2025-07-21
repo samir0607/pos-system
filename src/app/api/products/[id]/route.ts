@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function GET(request: Request, context: { params: { id: string } }) {
+  const { id } = context.params;
   const { data: product, error } = await supabase
     .from('products')
     .select('*, category:categories(*), supplier:suppliers(*)')
@@ -12,8 +12,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
   return NextResponse.json(product);
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function PUT(request: Request, context: { params: { id: string } }) {
+  const { id } = context.params;
   const body = await request.json();
   const { name, brand, cost_price, sell_price, quantity, category_id, supplier_id } = body;
   const { data: product, error } = await supabase
@@ -34,8 +34,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   return NextResponse.json(product);
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function DELETE(request: Request, context: { params: { id: string } }) {
+  const { id } = context.params;
   const { error } = await supabase
     .from('products')
     .delete()
