@@ -211,6 +211,7 @@ export default function ProductsPage() {
             className="border p-2 rounded flex-1"
             value={categoryName}
             onChange={e => setCategoryName(e.target.value)}
+            required
           />
           <button type="submit" className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Add Category</button>
         </form>
@@ -225,6 +226,7 @@ export default function ProductsPage() {
             className="border p-2 rounded flex-1"
             value={supplierName}
             onChange={e => setSupplierName(e.target.value)}
+            required
           />
           <input
             type="text"
@@ -232,6 +234,7 @@ export default function ProductsPage() {
             className="border p-2 rounded flex-1"
             value={supplierContact}
             onChange={e => setSupplierContact(e.target.value)}
+            required
           />
           <button type="submit" className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Add Supplier</button>
         </form>
@@ -246,6 +249,7 @@ export default function ProductsPage() {
             className="border p-2 rounded"
             value={formData.name}
             onChange={e => setFormData({ ...formData, name: e.target.value })}
+            required
           />
           <input
             type="text"
@@ -253,11 +257,13 @@ export default function ProductsPage() {
             className="border p-2 rounded"
             value={formData.brand}
             onChange={e => setFormData({ ...formData, brand: e.target.value })}
+            required
           />
           <select
             className="border p-2 rounded"
             value={formData.category_id}
             onChange={e => setFormData({ ...formData, category_id: e.target.value })}
+            required
           >
             <option value="">Select Category</option>
             {categories.map(cat => (
@@ -270,6 +276,7 @@ export default function ProductsPage() {
             className="border p-2 rounded"
             value={formData.cost_price}
             onChange={e => setFormData({ ...formData, cost_price: e.target.value })}
+            required
           />
           <input
             type="number"
@@ -277,6 +284,7 @@ export default function ProductsPage() {
             className="border p-2 rounded"
             value={formData.sell_price}
             onChange={e => setFormData({ ...formData, sell_price: e.target.value })}
+            required
           />
           <input
             type="number"
@@ -284,11 +292,13 @@ export default function ProductsPage() {
             className="border p-2 rounded"
             value={formData.quantity}
             onChange={e => setFormData({ ...formData, quantity: e.target.value })}
+            required  
           />
           <select
             className="border p-2 rounded"
             value={formData.supplier_id}
             onChange={e => setFormData({ ...formData, supplier_id: e.target.value })}
+            required
           >
             <option value="">Select Supplier</option>
             {suppliers.map(sup => (

@@ -118,7 +118,7 @@ export default function BillingPage() {
           <body>
             <div class="invoice">
               <div class="header">
-                <h1>Invoice</h1>
+                <h1>GenZ Collection</h1>
                 <p>Date: ${new Date().toLocaleDateString()}</p>
               </div>
               <table>
