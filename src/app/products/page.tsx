@@ -113,26 +113,53 @@ export default function ProductsPage() {
   // Product entry
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const response = await fetch('/api/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...formData,
-        cost_price: parseFloat(formData.cost_price),
-        sell_price: parseFloat(formData.sell_price),
-        quantity: parseInt(formData.quantity),
-        category_id: formData.category_id ? parseInt(formData.category_id) : null,
-        supplier_id: formData.supplier_id ? parseInt(formData.supplier_id) : null,
-      }),
-    });
-    if (response.ok) {
-      toast.success('Product added');
-      setFormData({
-        name: '', brand: '', category_id: '', cost_price: '', sell_price: '', quantity: '', supplier_id: '',
+    if (editingProduct) {
+      // Edit mode: update product
+      const response = await fetch(`/api/products/${editingProduct.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          cost_price: parseFloat(formData.cost_price),
+          sell_price: parseFloat(formData.sell_price),
+          quantity: parseInt(formData.quantity),
+          category_id: formData.category_id ? parseInt(formData.category_id) : null,
+          supplier_id: formData.supplier_id ? parseInt(formData.supplier_id) : null,
+        }),
       });
-      fetchProducts();
+      if (response.ok) {
+        toast.success('Product updated successfully');
+        fetchProducts();
+        setEditingProduct(null);
+        setFormData({
+          name: '', brand: '', category_id: '', cost_price: '', sell_price: '', quantity: '', supplier_id: '',
+        });
+      } else {
+        toast.error('Failed to update product');
+      }
     } else {
-      toast.error('Failed to add product');
+      // Add mode: create product
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          cost_price: parseFloat(formData.cost_price),
+          sell_price: parseFloat(formData.sell_price),
+          quantity: parseInt(formData.quantity),
+          category_id: formData.category_id ? parseInt(formData.category_id) : null,
+          supplier_id: formData.supplier_id ? parseInt(formData.supplier_id) : null,
+        }),
+      });
+      if (response.ok) {
+        toast.success('Product added');
+        setFormData({
+          name: '', brand: '', category_id: '', cost_price: '', sell_price: '', quantity: '', supplier_id: '',
+        });
+        fetchProducts();
+      } else {
+        toast.error('Failed to add product');
+      }
     }
   };
 
@@ -150,36 +177,6 @@ export default function ProductsPage() {
       }
     } catch (error) {
       toast.error('Error deleting product');
-    }
-  };
-
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingProduct) return;
-    try {
-      const response = await fetch(`/api/products/${editingProduct.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      if (response.ok) {
-        toast.success('Product updated successfully');
-        fetchProducts();
-        setEditingProduct(null);
-        setFormData({
-          name: '',
-          brand: '',
-          category_id: '',
-          cost_price: '',
-          sell_price: '',
-          quantity: '',
-          supplier_id: '',
-        });
-      } else {
-        toast.error('Failed to update product');
-      }
-    } catch (error) {
-      toast.error('Error updating product');
     }
   };
 

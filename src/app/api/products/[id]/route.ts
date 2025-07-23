@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest, context: any) {
-  const { id } = context.params;
+  const { id } = await context.params;
   const { data: product, error } = await supabase
     .from('products')
     .select('*, category:categories(*), supplier:suppliers(*)')
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, context: any) {
 }
 
 export async function PUT(request: NextRequest, context: any) {
-  const { id } = context.params;
+  const { id } = await context.params;
   const body = await request.json();
   const { name, brand, cost_price, sell_price, quantity, category_id, supplier_id } = body;
   const { data: product, error } = await supabase
@@ -35,7 +35,7 @@ export async function PUT(request: NextRequest, context: any) {
 }
 
 export async function DELETE(request: NextRequest, context: any) {
-  const { id } = context.params;
+  const { id } = await context.params;
   const { error } = await supabase
     .from('products')
     .delete()
