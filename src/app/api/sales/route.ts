@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { items, total_amount } = body;
+    const { items, total_amount, customer_name, customer_phone } = body;
 
     // Inventory validation: check if requested quantity is available for each item
     for (const item of items) {
@@ -19,11 +19,13 @@ export async function POST(request: Request) {
       }
     }
 
-    // Create sale
+    // Create sale with customer information
     const { data: sale, error: saleError } = await supabase
       .from('sales')
       .insert([
         {
+          customer_name,
+          customer_phone,
           total_amount,
         },
       ])
@@ -49,10 +51,22 @@ export async function POST(request: Request) {
 
     // Update product quantities
     for (const item of items) {
-      const { error: updateError } = await supabase.rpc('decrement_product_quantity', {
-        product_id: item.product_id,
-        amount: item.quantity_sold,
-      });
+      // First get current quantity
+      const { data: product, error: fetchError } = await supabase
+        .from('products')
+        .select('quantity')
+        .eq('id', item.product_id)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      // Then update with new quantity
+      const { error: updateError } = await supabase
+        .from('products')
+        .update({ 
+          quantity: product.quantity - item.quantity_sold 
+        })
+        .eq('id', item.product_id);
 
       if (updateError) throw updateError;
     }
@@ -60,7 +74,10 @@ export async function POST(request: Request) {
     return NextResponse.json(sale);
   } catch (error) {
     console.error('Error creating sale:', error);
-    return NextResponse.json({ error: 'Error creating sale' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Error creating sale', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 

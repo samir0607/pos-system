@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { PlusIcon, MinusIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import ProtectedRoute from '../components/ProtectedRoute';
 
 interface Product {
   id: string;
@@ -16,11 +17,21 @@ interface CartItem {
   quantity: number;
 }
 
+interface CustomerInfo {
+  name: string;
+  phone: string;
+}
+
 export default function BillingPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
+    name: '',
+    phone: ''
+  });
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -75,6 +86,11 @@ export default function BillingPage() {
   };
 
   const handleCheckout = async () => {
+    if (!customerInfo.name.trim() || !customerInfo.phone.trim()) {
+      toast.error('Please enter customer name and phone number');
+      return;
+    }
+
     try {
       const response = await fetch('/api/sales', {
         method: 'POST',
@@ -86,23 +102,140 @@ export default function BillingPage() {
             sell_price: item.product.sell_price,
             total_price: item.product.sell_price * item.quantity
           })),
-          total_amount: total
+          total_amount: total,
+          customer_name: customerInfo.name,
+          customer_phone: customerInfo.phone
         }),
       });
 
       if (response.ok) {
         toast.success('Sale completed successfully');
-        setCart([]);
+        return true; // Return success status
+      } else {
+        toast.error('Error processing sale');
+        return false;
       }
     } catch (error) {
       toast.error('Error processing sale');
+      return false;
     }
+  };
+
+  const generateInvoiceHTML = () => {
+    return `
+      <html>
+        <head>
+          <title>Invoice</title>
+          <style>
+            body { font-family: Arial, sans-serif; }
+            .invoice { max-width: 800px; margin: 0 auto; padding: 20px; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .customer-info { margin-bottom: 20px; }
+            .customer-info h3 { margin-bottom: 10px; }
+            .customer-info p { margin: 5px 0; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+            .total { text-align: right; margin-top: 20px; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="invoice">
+            <div class="header">
+              <h1>GenZ Collection</h1>
+              <p>Date: ${new Date().toLocaleDateString()}</p>
+            </div>
+            <div class="customer-info">
+              <h3>Customer Information:</h3>
+              <p><strong>Name:</strong> ${customerInfo.name}</p>
+              <p><strong>Phone:</strong> ${customerInfo.phone}</p>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Quantity</th>
+                  <th>Price</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${cart.map(item => `
+                  <tr>
+                    <td>${item.product.name}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${item.product.sell_price}</td>
+                    <td>₹${(item.product.sell_price * item.quantity).toFixed(2)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <div class="total">
+              Total: ₹${total.toFixed(2)}
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
   };
 
   const printInvoice = () => {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
-      printWindow.document.write(`
+      printWindow.document.write(generateInvoiceHTML());
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const sendWhatsAppInvoice = () => {
+    sendWhatsAppInvoiceWithData(cart, customerInfo, total);
+  };
+
+  const sendWhatsAppInvoiceWithData = (cartData: CartItem[], customerData: CustomerInfo, totalAmount: number) => {
+    try {
+      // Build itemized product list
+      const itemsList = cartData.map((item, idx) =>
+        `${idx + 1}. ${item.product.name} x${item.quantity} @ ₹${item.product.sell_price} = ₹${(item.product.sell_price * item.quantity).toFixed(2)}`
+      ).join("\n");
+
+      // Create WhatsApp message
+      const message = `🧾 *GenZ Collection Invoice*\n\n` +
+        `*Customer:* ${customerData.name}\n` +
+        `*Phone:* ${customerData.phone}\n` +
+        `*Date:* ${new Date().toLocaleDateString()}\n\n` +
+        `*Items:*\n${itemsList}\n\n` +
+        `*Total Amount:* ₹${totalAmount.toFixed(2)}\n\n` +
+        `Thank you for shopping with us! 🛍️\n` +
+        `For any queries, reply to this message.`;
+
+      // Format phone number (remove any non-digit characters and add country code if needed)
+      let phoneNumber = customerData.phone.replace(/\D/g, '');
+      if (!phoneNumber.startsWith('91') && phoneNumber.length === 10) {
+        phoneNumber = '91' + phoneNumber;
+      }
+      if (phoneNumber.length < 10) {
+        toast.error('Invalid phone number format');
+        return;
+      }
+      // Create WhatsApp share URL
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+      console.log('WhatsApp URL:', whatsappUrl); // Debug log
+      const newWindow = window.open(whatsappUrl, '_blank');
+      if (!newWindow) {
+        toast.error('Popup blocked! Please allow popups for this site.');
+      } else {
+        toast.success('WhatsApp opened! Please send the message.');
+      }
+    } catch (error) {
+      console.error('WhatsApp error:', error);
+      toast.error('Error opening WhatsApp');
+    }
+  };
+
+  const printInvoiceWithData = (cartData: CartItem[], customerData: CustomerInfo, totalAmount: number) => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      const invoiceHTML = `
         <html>
           <head>
             <title>Invoice</title>
@@ -110,6 +243,9 @@ export default function BillingPage() {
               body { font-family: Arial, sans-serif; }
               .invoice { max-width: 800px; margin: 0 auto; padding: 20px; }
               .header { text-align: center; margin-bottom: 20px; }
+              .customer-info { margin-bottom: 20px; }
+              .customer-info h3 { margin-bottom: 10px; }
+              .customer-info p { margin: 5px 0; }
               table { width: 100%; border-collapse: collapse; }
               th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
               .total { text-align: right; margin-top: 20px; font-weight: bold; }
@@ -121,6 +257,11 @@ export default function BillingPage() {
                 <h1>GenZ Collection</h1>
                 <p>Date: ${new Date().toLocaleDateString()}</p>
               </div>
+              <div class="customer-info">
+                <h3>Customer Information:</h3>
+                <p><strong>Name:</strong> ${customerData.name}</p>
+                <p><strong>Phone:</strong> ${customerData.phone}</p>
+              </div>
               <table>
                 <thead>
                   <tr>
@@ -131,7 +272,7 @@ export default function BillingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  ${cart.map(item => `
+                  ${cartData.map(item => `
                     <tr>
                       <td>${item.product.name}</td>
                       <td>${item.quantity}</td>
@@ -142,20 +283,22 @@ export default function BillingPage() {
                 </tbody>
               </table>
               <div class="total">
-                Total: ₹${total.toFixed(2)}
+                Total: ₹${totalAmount.toFixed(2)}
               </div>
             </div>
           </body>
         </html>
-      `);
+      `;
+      printWindow.document.write(invoiceHTML);
       printWindow.document.close();
       printWindow.print();
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Billing System</h1>
+    <ProtectedRoute>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">Billing System</h1>
       <div className="mb-6">
         <input
           type="text"
@@ -201,6 +344,39 @@ export default function BillingPage() {
             <p className="text-gray-500">No items in cart</p>
           ) : (
             <>
+              {/* Customer Information Form */}
+              <div className="mb-6 p-4 border rounded bg-gray-50">
+                <h3 className="font-semibold mb-3">Customer Information</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Customer Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={customerInfo.name}
+                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Enter customer name"
+                      className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      value={customerInfo.phone}
+                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="Enter phone number"
+                      className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-4">
                 {cart.map(item => (
                   <div key={item.product.id} className="flex items-center justify-between p-4 border rounded">
@@ -239,18 +415,38 @@ export default function BillingPage() {
                 </div>
                 <div className="flex space-x-4">
                   <button
-                    onClick={handleCheckout}
-                    className="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                  >
-                    Checkout
-                  </button>
-                  <button
-                    onClick={printInvoice}
-                    className="flex items-center justify-center bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                    onClick={() => printInvoiceWithData(cart, customerInfo, total)}
+                    disabled={cart.length === 0}
+                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
                   >
                     <PrinterIcon className="h-5 w-5 mr-2" />
-                    Print
+                    Print Invoice
                   </button>
+                  <button
+                    onClick={async () => {
+                      const checkoutSuccess = await handleCheckout();
+                      if (checkoutSuccess) {
+                        // Store cart data before clearing
+                        const cartData = [...cart];
+                        const customerData = { ...customerInfo };
+                        const totalAmount = total;
+                        
+                        // Clear the cart and form
+                        setCart([]);
+                        setCustomerInfo({ name: '', phone: '' });
+                        setShowCustomerForm(false);
+                        
+                        // Send WhatsApp with stored data
+                        setTimeout(() => {
+                          sendWhatsAppInvoiceWithData(cartData, customerData, totalAmount);
+                        }, 100);
+                      }
+                    }}
+                    className="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center justify-center"
+                  >
+                    📱 Checkout & WhatsApp
+                  </button>
+                  
                 </div>
               </div>
             </>
@@ -258,5 +454,6 @@ export default function BillingPage() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   );
 } 
