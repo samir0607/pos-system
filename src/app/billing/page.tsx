@@ -110,6 +110,7 @@ export default function BillingPage() {
 
       if (response.ok) {
         toast.success('Sale completed successfully');
+        await fetchProducts();
         return true; // Return success status
       } else {
         toast.error('Error processing sale');
@@ -199,13 +200,13 @@ export default function BillingPage() {
       ).join("\n");
 
       // Create WhatsApp message
-      const message = `🧾 *GenZ Collection Invoice*\n\n` +
+      const message = `*GenZ Collection Invoice*\n\n` +
         `*Customer:* ${customerData.name}\n` +
         `*Phone:* ${customerData.phone}\n` +
         `*Date:* ${new Date().toLocaleDateString()}\n\n` +
         `*Items:*\n${itemsList}\n\n` +
         `*Total Amount:* ₹${totalAmount.toFixed(2)}\n\n` +
-        `Thank you for shopping with us! 🛍️\n` +
+        `Thank you for shopping with us! \n` +
         `For any queries, reply to this message.`;
 
       // Format phone number (remove any non-digit characters and add country code if needed)
