@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-
+console.log('Rendering dashboard page');
 interface SalesData {
   totalSales: number;
   bestSellingProducts: Array<{
