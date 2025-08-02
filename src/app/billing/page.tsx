@@ -31,6 +31,7 @@ export default function BillingPage() {
     name: '',
     phone: ''
   });
+  const [discount, setDiscount] = useState('');
   const [showCustomerForm, setShowCustomerForm] = useState(false);
 
   useEffect(() => {
@@ -39,7 +40,7 @@ export default function BillingPage() {
 
   useEffect(() => {
     calculateTotal();
-  }, [cart]);
+  }, [cart, discount]);
 
   const fetchProducts = async () => {
     try {
@@ -53,7 +54,7 @@ export default function BillingPage() {
 
   const calculateTotal = () => {
     const newTotal = cart.reduce((sum, item) => sum + (item.product.sell_price * item.quantity), 0);
-    setTotal(newTotal);
+    setTotal(newTotal - Number(discount || 0));
   };
 
   const addToCart = (product: Product) => {
@@ -171,6 +172,7 @@ export default function BillingPage() {
               </tbody>
             </table>
             <div class="total">
+              Discount: ₹${Number(discount || 0).toFixed(2)}<br/>
               Total: ₹${total.toFixed(2)}
             </div>
           </div>
@@ -189,10 +191,10 @@ export default function BillingPage() {
   };
 
   const sendWhatsAppInvoice = () => {
-    sendWhatsAppInvoiceWithData(cart, customerInfo, total);
+    sendWhatsAppInvoiceWithData(cart, customerInfo, total, discount);
   };
 
-  const sendWhatsAppInvoiceWithData = (cartData: CartItem[], customerData: CustomerInfo, totalAmount: number) => {
+  const sendWhatsAppInvoiceWithData = (cartData: CartItem[], customerData: CustomerInfo, totalAmount: number, discount: string) => {
     try {
       // Build itemized product list
       const itemsList = cartData.map((item, idx) =>
@@ -205,6 +207,7 @@ export default function BillingPage() {
         `*Phone:* ${customerData.phone}\n` +
         `*Date:* ${new Date().toLocaleDateString()}\n\n` +
         `*Items:*\n${itemsList}\n\n` +
+        `*Discount:* ₹${Number(discount || 0).toFixed(2)}\n` +
         `*Total Amount:* ₹${totalAmount.toFixed(2)}\n\n` +
         `Thank you for shopping with us! \n` +
         `For any queries, reply to this message.`;
@@ -233,7 +236,7 @@ export default function BillingPage() {
     }
   };
 
-  const printInvoiceWithData = (cartData: CartItem[], customerData: CustomerInfo, totalAmount: number) => {
+  const printInvoiceWithData = (cartData: CartItem[], customerData: CustomerInfo, totalAmount: number, discount: string) => {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       const invoiceHTML = `
@@ -284,6 +287,7 @@ export default function BillingPage() {
                 </tbody>
               </table>
               <div class="total">
+                Discount: ₹${Number(discount).toFixed(2)}<br/>
                 Total: ₹${totalAmount.toFixed(2)}
               </div>
             </div>
@@ -409,14 +413,26 @@ export default function BillingPage() {
                   </div>
                 ))}
               </div>
+              
               <div className="mt-6 border-t pt-4">
+                <div className="flex items-center mb-4">
+                  <span className="mr-2 font-semibold">Discount:</span>
+                  <input
+                    type="number"
+                    value={discount}
+                    min={0}
+                    max={cart.reduce((sum, item) => sum + (item.product.sell_price * item.quantity), 0)}
+                    onChange={e => setDiscount(String(e.target.value))}
+                    className="w-24 px-2 py-1 border rounded"
+                  />
+                </div>
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-lg font-semibold">Total:</span>
                   <span className="text-lg font-semibold">₹{total.toFixed(2)}</span>
                 </div>
                 <div className="flex space-x-4">
                   <button
-                    onClick={() => printInvoiceWithData(cart, customerInfo, total)}
+                    onClick={() => printInvoiceWithData(cart, customerInfo, total, discount)}
                     disabled={cart.length === 0}
                     className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
                   >
@@ -435,11 +451,12 @@ export default function BillingPage() {
                         // Clear the cart and form
                         setCart([]);
                         setCustomerInfo({ name: '', phone: '' });
+                        setDiscount('');
                         setShowCustomerForm(false);
                         
                         // Send WhatsApp with stored data
                         setTimeout(() => {
-                          sendWhatsAppInvoiceWithData(cartData, customerData, totalAmount);
+                          sendWhatsAppInvoiceWithData(cartData, customerData, totalAmount, discount);
                         }, 100);
                       }
                     }}
