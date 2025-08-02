@@ -105,29 +105,24 @@ export default function ProductsPage() {
   const handleSupplierSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supplierFormData.name.trim()) return;
-    if (editingProduct) {
+    if (editingSupplier) {
       // Edit mode: update product
-      const response = await fetch(`/api/products/${editingProduct.id}`, {
+      const response = await fetch(`/api/suppliers/${editingSupplier.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
-          cost_price: parseFloat(formData.cost_price),
-          sell_price: parseFloat(formData.sell_price),
-          quantity: parseInt(formData.quantity),
-          category_id: formData.category_id ? parseInt(formData.category_id) : null,
-          supplier_id: formData.supplier_id ? parseInt(formData.supplier_id) : null,
+          ...supplierFormData
         }),
       });
       if (response.ok) {
-        toast.success('Product updated successfully');
-        fetchProducts();
-        setEditingProduct(null);
-        setFormData({
-          name: '', brand: '', category_id: '', cost_price: '', sell_price: '', quantity: '', supplier_id: '',
+        toast.success('Supplier updated successfully');
+        fetchSuppliers();
+        setEditingSupplier(null);
+        setSupplierFormData({
+          name: '', contact: '', address: ''
         });
       } else {
-        toast.error('Failed to update product');
+        toast.error('Failed to update supplier');
       }
     } else {
       const response = await fetch('/api/suppliers', {
@@ -308,7 +303,7 @@ export default function ProductsPage() {
             onChange={e => setSupplierFormData({...supplierFormData, address: e.target.value})}
             required
           />
-          <button type="submit" className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Add Supplier</button>
+          <button type="submit" className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">{editingSupplier? 'Update Supplier' : 'Add Supplier'}</button>
         </form>
       </div>
 
