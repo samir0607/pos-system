@@ -13,6 +13,7 @@ interface Supplier {
   id: number;
   name: string;
   contact: string;
+  address: string;
 }
 
 interface Product {
@@ -31,15 +32,24 @@ interface Product {
 export default function ProductsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [search, setSearch] = useState('');
 
+  // Search
+  const [searchProduct, setSearchProduct] = useState('');
+  const [searchSupplier, setSearchSupplier] = useState('');
   // Category form state
   const [categoryName, setCategoryName] = useState('');
   // Supplier form state
-  const [supplierName, setSupplierName] = useState('');
-  const [supplierContact, setSupplierContact] = useState('');
+  const [supplierFormData, setSupplierFormData] = useState({
+    name: '',
+    contact: '',
+    address: ''
+  });
+  // const [supplierName, setSupplierName] = useState('');
+  // const [supplierContact, setSupplierContact] = useState('');
+  // const [supplierAddress, setSupplierAddress] = useState('');
   // Product form state
   const [formData, setFormData] = useState({
     name: '',
@@ -94,19 +104,48 @@ export default function ProductsPage() {
   // Supplier entry
   const handleSupplierSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supplierName.trim()) return;
-    const response = await fetch('/api/suppliers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: supplierName, contact: supplierContact }),
-    });
-    if (response.ok) {
-      toast.success('Supplier added');
-      setSupplierName('');
-      setSupplierContact('');
-      fetchSuppliers();
+    if (!supplierFormData.name.trim()) return;
+    if (editingProduct) {
+      // Edit mode: update product
+      const response = await fetch(`/api/products/${editingProduct.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          cost_price: parseFloat(formData.cost_price),
+          sell_price: parseFloat(formData.sell_price),
+          quantity: parseInt(formData.quantity),
+          category_id: formData.category_id ? parseInt(formData.category_id) : null,
+          supplier_id: formData.supplier_id ? parseInt(formData.supplier_id) : null,
+        }),
+      });
+      if (response.ok) {
+        toast.success('Product updated successfully');
+        fetchProducts();
+        setEditingProduct(null);
+        setFormData({
+          name: '', brand: '', category_id: '', cost_price: '', sell_price: '', quantity: '', supplier_id: '',
+        });
+      } else {
+        toast.error('Failed to update product');
+      }
     } else {
-      toast.error('Failed to add supplier');
+      const response = await fetch('/api/suppliers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: supplierFormData.name, contact: supplierFormData.contact, address: supplierFormData.address }),
+      });
+      if (response.ok) {
+        toast.success('Supplier added');
+        setSupplierFormData({
+          name: '',
+          contact: '',
+          address: ''
+        });
+        fetchSuppliers();
+      } else {
+        toast.error('Failed to add supplier');
+      }
     }
   };
 
@@ -163,7 +202,7 @@ export default function ProductsPage() {
     }
   };
 
-  const handleDelete = async (productId: string) => {
+  const handleProductDelete = async (productId: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
     try {
       const response = await fetch(`/api/products/${productId}`, {
@@ -177,6 +216,23 @@ export default function ProductsPage() {
       }
     } catch (error) {
       toast.error('Error deleting product');
+    }
+  };
+
+  const handleSupplierDelete = async (supplierId: string) => {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+    try {
+      const response = await fetch(`/api/suppliers/${supplierId}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        toast.success('Supplier deleted successfully');
+        fetchProducts();
+      } else {
+        toast.error('Failed to delete Supplier');
+      }
+    } catch (error) {
+      toast.error('Error deleting Supplier');
     }
   };
 
@@ -194,6 +250,17 @@ export default function ProductsPage() {
       });
     }
   }, [editingProduct]);
+
+  useEffect(() => {
+    if (editingSupplier) {
+      setSupplierFormData({
+        name: editingSupplier.name,
+        contact: editingSupplier.contact,
+        address: editingSupplier.address
+      });
+    }
+  }, [editingSupplier]);
+
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -221,21 +288,82 @@ export default function ProductsPage() {
             type="text"
             placeholder="Supplier Name"
             className="border p-2 rounded flex-1"
-            value={supplierName}
-            onChange={e => setSupplierName(e.target.value)}
+            value={supplierFormData.name}
+            onChange={e => setSupplierFormData({...supplierFormData, name: e.target.value})}
             required
           />
           <input
             type="text"
             placeholder="Contact"
             className="border p-2 rounded flex-1"
-            value={supplierContact}
-            onChange={e => setSupplierContact(e.target.value)}
+            value={supplierFormData.contact}
+            onChange={e => setSupplierFormData({...supplierFormData, contact: e.target.value})}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Address"
+            className="border p-2 rounded flex-1"
+            value={supplierFormData.address}
+            onChange={e => setSupplierFormData({...supplierFormData, address: e.target.value})}
             required
           />
           <button type="submit" className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Add Supplier</button>
         </form>
       </div>
+
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search Suppliers..."
+          value={searchSupplier}
+          onChange={e => setSearchSupplier(e.target.value)}
+          className="w-full md:w-1/2 px-4 py-2 border rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      {/* Supplier Table */}
+      <div className="bg-white rounded-lg shadow-md overflow-auto my-8">
+        <table className="min-w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {suppliers
+              .filter(supplier =>
+                supplier.name.toLowerCase().includes(searchSupplier.toLowerCase()) ||
+                supplier.address.toLowerCase().includes(searchSupplier.toLowerCase())
+              )
+              .map((supplier) => (
+                <tr key={supplier.id}>
+                  <td className="px-6 py-4 whitespace-nowrap">{supplier.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{supplier.contact}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{supplier.address}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <button
+                      onClick={() => setEditingSupplier(supplier)}
+                      className="text-blue-600 hover:text-blue-900 mr-4"
+                    >
+                      <PencilIcon className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => handleSupplierDelete(supplier.id.toString())}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+
       {/* Product Entry Section */}
       <div className="mb-8 bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold mb-4">Add Product</h2>
@@ -310,14 +438,14 @@ export default function ProductsPage() {
         <input
           type="text"
           placeholder="Search products..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
+          value={searchProduct}
+          onChange={e => setSearchProduct(e.target.value)}
           className="w-full md:w-1/2 px-4 py-2 border rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
       {/* Products Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white rounded-lg shadow-md overflow-auto my-8">
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
@@ -334,10 +462,10 @@ export default function ProductsPage() {
           <tbody className="bg-white divide-y divide-gray-200">
             {products
               .filter(product =>
-                product.name.toLowerCase().includes(search.toLowerCase()) ||
-                product.brand.toLowerCase().includes(search.toLowerCase()) ||
-                (product.category && product.category.name.toLowerCase().includes(search.toLowerCase())) ||
-                (product.supplier && product.supplier.name.toLowerCase().includes(search.toLowerCase()))
+                product.name.toLowerCase().includes(searchProduct.toLowerCase()) ||
+                product.brand.toLowerCase().includes(searchProduct.toLowerCase()) ||
+                (product.category && product.category.name.toLowerCase().includes(searchProduct.toLowerCase())) ||
+                (product.supplier && product.supplier.name.toLowerCase().includes(searchProduct.toLowerCase()))
               )
               .map((product) => (
                 <tr key={product.id}>
@@ -356,7 +484,7 @@ export default function ProductsPage() {
                       <PencilIcon className="h-5 w-5" />
                     </button>
                     <button
-                      onClick={() => handleDelete(product.id.toString())}
+                      onClick={() => handleProductDelete(product.id.toString())}
                       className="text-red-600 hover:text-red-900"
                     >
                       <TrashIcon className="h-5 w-5" />

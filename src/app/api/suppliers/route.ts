@@ -12,10 +12,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { name, contact } = body;
+  const { name, contact, address } = body;
   const { data: supplier, error } = await supabase
     .from('suppliers')
-    .insert([{ name, contact }])
+    .insert([{ name, contact, address }])
     .select()
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
