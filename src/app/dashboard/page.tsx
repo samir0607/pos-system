@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-console.log('Rendering dashboard page');
+
 interface SalesData {
   totalSales: number;
   bestSellingProducts: Array<{
@@ -32,7 +32,7 @@ export default function DashboardPage() {
       
       // Process the data for the dashboard
       const processedData: SalesData = {
-        totalSales: data.reduce((sum: number, sale: any) => sum + sale.total, 0),
+        totalSales: data.reduce((sum: number, sale: any) => sum + (Number(sale.total_amount) || 0), 0),
         bestSellingProducts: processBestSellingProducts(data),
         salesByDate: processSalesByDate(data),
       };
@@ -52,7 +52,7 @@ export default function DashboardPage() {
       sale.items.forEach((item: any) => {
         const productName = item.product.name;
         const currentTotal = productSales.get(productName) || 0;
-        productSales.set(productName, currentTotal + item.quantity);
+        productSales.set(productName, currentTotal + (item.quantity_sold || 0));
       });
     });
 
@@ -66,9 +66,9 @@ export default function DashboardPage() {
     const salesByDate = new Map<string, number>();
     
     sales.forEach(sale => {
-      const date = new Date(sale.createdAt).toLocaleDateString();
+      const date = new Date(sale.sale_date).toLocaleDateString();
       const currentTotal = salesByDate.get(date) || 0;
-      salesByDate.set(date, currentTotal + sale.total);
+      salesByDate.set(date, currentTotal + (Number(sale.total_amount) || 0));
     });
 
     return Array.from(salesByDate.entries())
@@ -142,18 +142,20 @@ export default function DashboardPage() {
               {salesData?.salesByDate.map((sale, index) => (
                 <div
                   key={index}
-                  className="flex-1 bg-blue-500 rounded-t"
+                  className="bg-blue-500 rounded-t"
                   style={{
-                    height: `${(sale.total / Math.max(...salesData.salesByDate.map(s => s.total))) * 100}%`,
+                    height: `${(sale.total / Math.max(...(salesData.salesByDate.map(s => s.total)) || [1])) * 100}%`,
+                    width: '51px',
+                    minWidth: '51px'
                   }}
                   title={`${sale.date}: ₹${sale.total.toFixed(2)}`}
                 />
               ))}
             </div>
-            <div className="flex justify-between mt-2 text-sm text-gray-600">
+            <div className="justify-between mt-2 text-[10px] text-gray-600">
               {salesData?.salesByDate.map((sale, index) => (
                 <span key={index} className="flex-1 text-center">
-                  {sale.date}
+                  {sale.date}|
                 </span>
               ))}
             </div>
