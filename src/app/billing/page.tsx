@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PlusIcon, MinusIcon, PrinterIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, MinusIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import ProtectedRoute from '../components/ProtectedRoute';
 
@@ -113,20 +113,23 @@ export default function BillingPage() {
       });
 
       if (response.ok) {
+        const data = await response.json();
+        const currentSaleId = data.id;
+        console.log("Sale response:", data); 
         toast.success('Sale completed successfully');
         await fetchProducts();
-        return true; // Return success status
+        return currentSaleId; // Return success status
       } else {
         toast.error('Error processing sale');
-        return false;
+        return 0;
       }
     } catch (error) {
       toast.error('Error processing sale');
-      return false;
+      return 0;
     }
   };
 
-  const sendWhatsAppInvoiceWithData = (cartData: CartItem[], customerData: CustomerInfo, totalAmount: number, discount: string) => {
+  const sendWhatsAppInvoice = (cartData: CartItem[], customerData: CustomerInfo, totalAmount: number, discount: string) => {
     try {
       // Build itemized product list
       const itemsList = cartData.map((item, idx) =>
@@ -169,8 +172,28 @@ export default function BillingPage() {
     }
   };
 
-  const printInvoiceWithData = (cartData: CartItem[], customerData: CustomerInfo, totalAmount: number, discount: string) => {
+  const convertToWords = (amount: number): string => {
+    const words = require('number-to-words');
+    const integerPart = Math.floor(amount);
+    const decimalPart = Math.round((amount - integerPart) * 100);
+
+    let result = words.toWords(integerPart) + ' rupees';
+    if (decimalPart > 0) {
+      result += ' and ' + words.toWords(decimalPart) + ' paise';
+    }
+
+    return result.charAt(0).toUpperCase() + result.slice(1);
+  }
+
+  const printInvoice = (
+    cartData: CartItem[], 
+    customerData: CustomerInfo, 
+    totalAmount: number, 
+    discount: string,
+    saleId: number
+  ) => {
     const printWindow = window.open('', '_blank');
+    const amountInWords = convertToWords(totalAmount);
     if (printWindow) {
       const invoiceHTML = `
         <html>
@@ -178,9 +201,19 @@ export default function BillingPage() {
             <title>Invoice</title>
             <style>
               body { font-family: Arial, sans-serif; }
+              thead{ background-color: lightgrey }
+              @media print {
+                thead {
+                  background-color: lightgrey !important;
+                  color: black !important;
+                  -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
+                }
+              }
+              .top { display: flex; justify-content: space-between }
               .invoice { max-width: 800px; margin: 0 auto; padding: 20px; }
-              .header { text-align: center; margin-bottom: 20px; }
-              .customer-info { margin-bottom: 20px; }
+              .header { text-align: left; margin-bottom: 20px; }
+              .customer-info { margin-bottom: 10px; }
               .customer-info h3 { margin-bottom: 10px; }
               .customer-info p { margin: 5px 0; }
               table { width: 100%; border-collapse: collapse; }
@@ -190,18 +223,22 @@ export default function BillingPage() {
           </head>
           <body>
             <div class="invoice">
-              <h1>Sales Invoice</h1>
+              <div class="top">
+                <img id="invoice-logo" src="logo.png" alt="Logo" width="120" height="120"/>
+                <p><strong> Sales Invoice/Cash Memo </strong></br> (original for Receipient)</br>
+                Date: ${new Date().toLocaleDateString()}</br>
+                Invoice.No: ${saleId}</p>
+              </div>
               <div class="header">
-                <h1>GenZ Collection</h1>
-                <h3>Beauty Parlour and Fashion Shop</h3>
+                <h3>GenZ Collection - Beauty Parlour and Fashion Shop</h3>
                 <p>Sukulpurwa, Bapu Nagar, Pipiganj, Uttar Pradesh - 273165</p>
+                <p>Mob. No: 9076966951</p>
               </div>
               <div class="customer-info">
                 <h3>Bill To:</h3>
                 <p><strong>Name:</strong> ${customerData.name}</p>
                 <p><strong>Phone:</strong> ${customerData.phone}</p>
                 <p><strong>Address:</strong> ${customerData.address} </p>
-                <p>Date: ${new Date().toLocaleDateString()}</p>
               </div>
               <table>
                 <thead>
@@ -227,13 +264,24 @@ export default function BillingPage() {
                 Discount: ₹${Number(discount).toFixed(2)}<br/>
                 Total: ₹${totalAmount.toFixed(2)}
               </div>
+              <h4>Amount In Words: </h4>
+              <p> ${ amountInWords } </p>
             </div>
           </body>
         </html>
       `;
       printWindow.document.write(invoiceHTML);
       printWindow.document.close();
-      printWindow.print();
+      printWindow.onload = () => {
+        const logoImg = printWindow.document.getElementById('invoice-logo') as HTMLImageElement;
+        if(logoImg?.complete) {
+          printWindow.print();
+        } else {
+          logoImg.onload = () => {
+            printWindow.print();
+          }
+        }
+      }
     }
   };
 
@@ -381,22 +429,24 @@ export default function BillingPage() {
                   <span className="text-lg font-semibold">₹{total.toFixed(2)}</span>
                 </div>
                 <div className="flex space-x-4">
-                  <button
-                    onClick={() => printInvoiceWithData(cart, customerInfo, total, discount)}
+                  {/* <button
+                    onClick={() => {
+                      printInvoice(cart, customerInfo, total, discount, currentSaleId)}
                     disabled={cart.length === 0}
                     className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
-                  >
-                    <PrinterIcon className="h-5 w-5 mr-2" />
+                  > */}
+                    {/* <PrinterIcon className="h-5 w-5 mr-2" />
                     Print Invoice
-                  </button>
+                  </button> */}
                   <button
                     onClick={async () => {
-                      const checkoutSuccess = await handleCheckout();
-                      if (checkoutSuccess) {
+                      const currentSaleId = await handleCheckout();
+                      if (currentSaleId!=0) {
                         // Store cart data before clearing
                         const cartData = [...cart];
                         const customerData = { ...customerInfo };
                         const totalAmount = total;
+                        const discountAmount = discount;
                         
                         // Clear the cart and form
                         setCart([]);
@@ -404,15 +454,17 @@ export default function BillingPage() {
                         setDiscount('');
                         setShowCustomerForm(false);
                         
+                        printInvoice(cartData, customerData, totalAmount, discountAmount, currentSaleId);
+
                         // Send WhatsApp with stored data
                         setTimeout(() => {
-                          sendWhatsAppInvoiceWithData(cartData, customerData, totalAmount, discount);
+                          sendWhatsAppInvoice(cartData, customerData, totalAmount, discount);
                         }, 100);
                       }
                     }}
                     className="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center justify-center"
                   >
-                    📱 Checkout & WhatsApp
+                    📱 Checkout
                   </button>
                   
                 </div>

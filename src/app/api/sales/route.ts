@@ -84,7 +84,7 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const { data: sales, error } = await supabase
+    const { data: sale, error } = await supabase
       .from('sales')
       .select(`
         *,
@@ -96,7 +96,7 @@ export async function GET() {
       .order('id', { ascending: false });
 
     if (error) throw error;
-    return NextResponse.json(sales);
+    return NextResponse.json(sale);
   } catch (error) {
     console.error('Error fetching sales:', error);
     return NextResponse.json({ error: 'Error fetching sales' }, { status: 500 });
