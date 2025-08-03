@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
@@ -35,7 +35,7 @@ export default function ProductsPage() {
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-
+  
   // Search
   const [searchProduct, setSearchProduct] = useState('');
   const [searchSupplier, setSearchSupplier] = useState('');
@@ -47,9 +47,7 @@ export default function ProductsPage() {
     contact: '',
     address: ''
   });
-  // const [supplierName, setSupplierName] = useState('');
-  // const [supplierContact, setSupplierContact] = useState('');
-  // const [supplierAddress, setSupplierAddress] = useState('');
+  
   // Product form state
   const [formData, setFormData] = useState({
     name: '',
@@ -60,6 +58,9 @@ export default function ProductsPage() {
     quantity: '',
     supplier_id: '',
   });
+
+  const supplierFormRef  = useRef<HTMLDivElement>(null);
+  const productFormRef  = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchCategories();
@@ -276,7 +277,7 @@ export default function ProductsPage() {
         </form>
       </div>
       {/* Supplier Entry Section */}
-      <div className="mb-8 bg-white p-6 rounded-lg shadow-md">
+      <div className="mb-8 bg-white p-6 rounded-lg shadow-md" ref={supplierFormRef}>
         <h2 className="text-xl font-semibold mb-4">Add Supplier</h2>
         <form onSubmit={handleSupplierSubmit} className="flex gap-4 flex-wrap">
           <input
@@ -341,7 +342,10 @@ export default function ProductsPage() {
                   <td className="px-6 py-4 whitespace-nowrap">{supplier.address}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button
-                      onClick={() => setEditingSupplier(supplier)}
+                      onClick={() => {
+                        setEditingSupplier(supplier);
+                        supplierFormRef.current?.scrollIntoView({ behavior: 'smooth' });
+                      }}
                       className="text-blue-600 hover:text-blue-900 mr-4"
                     >
                       <PencilIcon className="h-5 w-5" />
@@ -360,7 +364,7 @@ export default function ProductsPage() {
       </div>
 
       {/* Product Entry Section */}
-      <div className="mb-8 bg-white p-6 rounded-lg shadow-md">
+      <div className="mb-8 bg-white p-6 rounded-lg shadow-md" ref={productFormRef}>
         <h2 className="text-xl font-semibold mb-4">Add Product</h2>
         <form onSubmit={handleProductSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input
@@ -473,7 +477,10 @@ export default function ProductsPage() {
                   <td className="px-6 py-4 whitespace-nowrap">{product.supplier ? product.supplier.name : '-'}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button
-                      onClick={() => setEditingProduct(product)}
+                      onClick={() => {
+                        setEditingProduct(product);
+                        productFormRef.current?.scrollIntoView({ behavior: 'smooth'});
+                      }}
                       className="text-blue-600 hover:text-blue-900 mr-4"
                     >
                       <PencilIcon className="h-5 w-5" />
