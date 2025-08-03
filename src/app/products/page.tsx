@@ -49,7 +49,7 @@ export default function ProductsPage() {
   });
   
   // Product form state
-  const [formData, setFormData] = useState({
+  const [productFormData, setProductFormData] = useState({
     name: '',
     brand: '',
     category_id: '',
@@ -154,19 +154,19 @@ export default function ProductsPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
-          cost_price: parseFloat(formData.cost_price),
-          sell_price: parseFloat(formData.sell_price),
-          quantity: parseInt(formData.quantity),
-          category_id: formData.category_id ? parseInt(formData.category_id) : null,
-          supplier_id: formData.supplier_id ? parseInt(formData.supplier_id) : null,
+          ...productFormData,
+          cost_price: parseFloat(productFormData.cost_price),
+          sell_price: parseFloat(productFormData.sell_price),
+          quantity: parseInt(productFormData.quantity),
+          category_id: productFormData.category_id ? parseInt(productFormData.category_id) : null,
+          supplier_id: productFormData.supplier_id ? parseInt(productFormData.supplier_id) : null,
         }),
       });
       if (response.ok) {
         toast.success('Product updated successfully');
         fetchProducts();
         setEditingProduct(null);
-        setFormData({
+        setProductFormData({
           name: '', brand: '', category_id: '', cost_price: '', sell_price: '', quantity: '', supplier_id: '',
         });
       } else {
@@ -178,17 +178,17 @@ export default function ProductsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
-          cost_price: parseFloat(formData.cost_price),
-          sell_price: parseFloat(formData.sell_price),
-          quantity: parseInt(formData.quantity),
-          category_id: formData.category_id ? parseInt(formData.category_id) : null,
-          supplier_id: formData.supplier_id ? parseInt(formData.supplier_id) : null,
+          ...productFormData,
+          cost_price: parseFloat(productFormData.cost_price),
+          sell_price: parseFloat(productFormData.sell_price),
+          quantity: parseInt(productFormData.quantity),
+          category_id: productFormData.category_id ? parseInt(productFormData.category_id) : null,
+          supplier_id: productFormData.supplier_id ? parseInt(productFormData.supplier_id) : null,
         }),
       });
       if (response.ok) {
         toast.success('Product added');
-        setFormData({
+        setProductFormData({
           name: '', brand: '', category_id: '', cost_price: '', sell_price: '', quantity: '', supplier_id: '',
         });
         fetchProducts();
@@ -235,7 +235,7 @@ export default function ProductsPage() {
   // When editing, pre-fill the form
   useEffect(() => {
     if (editingProduct) {
-      setFormData({
+      setProductFormData({
         name: editingProduct.name,
         brand: editingProduct.brand,
         category_id: editingProduct.category_id?.toString() || '',
@@ -371,22 +371,22 @@ export default function ProductsPage() {
             type="text"
             placeholder="Product Name"
             className="border p-2 rounded"
-            value={formData.name}
-            onChange={e => setFormData({ ...formData, name: e.target.value })}
+            value={productFormData.name}
+            onChange={e => setProductFormData({ ...productFormData, name: e.target.value })}
             required
           />
           <input
             type="text"
             placeholder="Brand"
             className="border p-2 rounded"
-            value={formData.brand}
-            onChange={e => setFormData({ ...formData, brand: e.target.value })}
+            value={productFormData.brand}
+            onChange={e => setProductFormData({ ...productFormData, brand: e.target.value })}
             required
           />
           <select
             className="border p-2 rounded"
-            value={formData.category_id}
-            onChange={e => setFormData({ ...formData, category_id: e.target.value })}
+            value={productFormData.category_id}
+            onChange={e => setProductFormData({ ...productFormData, category_id: e.target.value })}
             required
           >
             <option value="">Select Category</option>
@@ -398,30 +398,30 @@ export default function ProductsPage() {
             type="number"
             placeholder="Cost Price"
             className="border p-2 rounded"
-            value={formData.cost_price}
-            onChange={e => setFormData({ ...formData, cost_price: e.target.value })}
+            value={productFormData.cost_price}
+            onChange={e => setProductFormData({ ...productFormData, cost_price: e.target.value })}
             required
           />
           <input
             type="number"
             placeholder="Sell Price"
             className="border p-2 rounded"
-            value={formData.sell_price}
-            onChange={e => setFormData({ ...formData, sell_price: e.target.value })}
+            value={productFormData.sell_price}
+            onChange={e => setProductFormData({ ...productFormData, sell_price: e.target.value })}
             required
           />
           <input
             type="number"
             placeholder="Quantity"
             className="border p-2 rounded"
-            value={formData.quantity}
-            onChange={e => setFormData({ ...formData, quantity: e.target.value })}
+            value={productFormData.quantity}
+            onChange={e => setProductFormData({ ...productFormData, quantity: e.target.value })}
             required  
           />
           <select
             className="border p-2 rounded"
-            value={formData.supplier_id}
-            onChange={e => setFormData({ ...formData, supplier_id: e.target.value })}
+            value={productFormData.supplier_id}
+            onChange={e => setProductFormData({ ...productFormData, supplier_id: e.target.value })}
             required
           >
             <option value="">Select Supplier</option>
