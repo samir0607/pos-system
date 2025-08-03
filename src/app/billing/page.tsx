@@ -20,6 +20,7 @@ interface CartItem {
 interface CustomerInfo {
   name: string;
   phone: string;
+  address: string;
 }
 
 export default function BillingPage() {
@@ -29,7 +30,8 @@ export default function BillingPage() {
   const [search, setSearch] = useState('');
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: '',
-    phone: ''
+    phone: '',
+    address: ''
   });
   const [discount, setDiscount] = useState('');
   const [showCustomerForm, setShowCustomerForm] = useState(false);
@@ -105,7 +107,8 @@ export default function BillingPage() {
           })),
           total_amount: total,
           customer_name: customerInfo.name,
-          customer_phone: customerInfo.phone
+          customer_phone: customerInfo.phone,
+          customer_address: customerInfo.address
         }),
       });
 
@@ -123,77 +126,6 @@ export default function BillingPage() {
     }
   };
 
-  const generateInvoiceHTML = () => {
-    return `
-      <html>
-        <head>
-          <title>Invoice</title>
-          <style>
-            body { font-family: Arial, sans-serif; }
-            .invoice { max-width: 800px; margin: 0 auto; padding: 20px; }
-            .header { text-align: center; margin-bottom: 20px; }
-            .customer-info { margin-bottom: 20px; }
-            .customer-info h3 { margin-bottom: 10px; }
-            .customer-info p { margin: 5px 0; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
-            .total { text-align: right; margin-top: 20px; font-weight: bold; }
-          </style>
-        </head>
-        <body>
-          <div class="invoice">
-            <div class="header">
-              <h1>GenZ Collection</h1>
-              <p>Date: ${new Date().toLocaleDateString()}</p>
-            </div>
-            <div class="customer-info">
-              <h3>Customer Information:</h3>
-              <p><strong>Name:</strong> ${customerInfo.name}</p>
-              <p><strong>Phone:</strong> ${customerInfo.phone}</p>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Quantity</th>
-                  <th>Price</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${cart.map(item => `
-                  <tr>
-                    <td>${item.product.name}</td>
-                    <td>${item.quantity}</td>
-                    <td>₹${item.product.sell_price}</td>
-                    <td>₹${(item.product.sell_price * item.quantity).toFixed(2)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-            <div class="total">
-              Discount: ₹${Number(discount || 0).toFixed(2)}<br/>
-              Total: ₹${total.toFixed(2)}
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-  };
-
-  const printInvoice = () => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(generateInvoiceHTML());
-      printWindow.document.close();
-      printWindow.print();
-    }
-  };
-
-  const sendWhatsAppInvoice = () => {
-    sendWhatsAppInvoiceWithData(cart, customerInfo, total, discount);
-  };
-
   const sendWhatsAppInvoiceWithData = (cartData: CartItem[], customerData: CustomerInfo, totalAmount: number, discount: string) => {
     try {
       // Build itemized product list
@@ -205,6 +137,7 @@ export default function BillingPage() {
       const message = `*GenZ Collection Invoice*\n\n` +
         `*Customer:* ${customerData.name}\n` +
         `*Phone:* ${customerData.phone}\n` +
+        `*Address:* ${customerData.address}\n` +
         `*Date:* ${new Date().toLocaleDateString()}\n\n` +
         `*Items:*\n${itemsList}\n\n` +
         `*Discount:* ₹${Number(discount || 0).toFixed(2)}\n` +
@@ -257,14 +190,18 @@ export default function BillingPage() {
           </head>
           <body>
             <div class="invoice">
+              <h1>Sales Invoice</h1>
               <div class="header">
                 <h1>GenZ Collection</h1>
-                <p>Date: ${new Date().toLocaleDateString()}</p>
+                <h3>Beauty Parlour and Fashion Shop</h3>
+                <p>Sukulpurwa, Bapu Nagar, Pipiganj, Uttar Pradesh - 273165</p>
               </div>
               <div class="customer-info">
-                <h3>Customer Information:</h3>
+                <h3>Bill To:</h3>
                 <p><strong>Name:</strong> ${customerData.name}</p>
                 <p><strong>Phone:</strong> ${customerData.phone}</p>
+                <p><strong>Address:</strong> ${customerData.address} </p>
+                <p>Date: ${new Date().toLocaleDateString()}</p>
               </div>
               <table>
                 <thead>
@@ -379,6 +316,19 @@ export default function BillingPage() {
                       required
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Address *
+                    </label>
+                    <input
+                      type="tel"
+                      value={customerInfo.address}
+                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, address: e.target.value }))}
+                      placeholder="Enter phone number"
+                      className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -450,7 +400,7 @@ export default function BillingPage() {
                         
                         // Clear the cart and form
                         setCart([]);
-                        setCustomerInfo({ name: '', phone: '' });
+                        setCustomerInfo({ name: '', phone: '', address: '' });
                         setDiscount('');
                         setShowCustomerForm(false);
                         

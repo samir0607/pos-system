@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { items, total_amount, customer_name, customer_phone } = body;
+    const { items, total_amount, customer_name, customer_phone, customer_address } = body;
 
     // Inventory validation: check if requested quantity is available for each item
     for (const item of items) {
@@ -26,6 +26,7 @@ export async function POST(request: Request) {
         {
           customer_name,
           customer_phone,
+          customer_address,
           total_amount,
         },
       ])
