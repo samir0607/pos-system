@@ -210,7 +210,7 @@ export default function BillingPage() {
                   print-color-adjust: exact;
                 }
               }
-              .top { display: flex; justify-content: space-between }
+              .top, .info { display: flex; justify-content: space-between }
               .invoice { max-width: 800px; margin: 0 auto; padding: 20px; }
               .header { text-align: left; margin-bottom: 20px; }
               .customer-info { margin-bottom: 10px; }
@@ -224,9 +224,9 @@ export default function BillingPage() {
           <body>
             <div class="invoice">
               <div class="top">
-                <img id="invoice-logo" src="logo.png" alt="Logo" width="120" height="120"/>
+                <img id="invoice-logo" src="logo.png" alt="Logo" width="120" height="130"/>
                 <p><strong> Sales Invoice/Cash Memo </strong></br> (original for Receipient)</br>
-                Date: ${new Date().toLocaleDateString()}</br>
+                </br> Date: ${new Date().toLocaleDateString()}</br>
                 Invoice.No: ${saleId}</p>
               </div>
               <div class="header">
@@ -234,11 +234,14 @@ export default function BillingPage() {
                 <p>Sukulpurwa, Bapu Nagar, Pipiganj, Uttar Pradesh - 273165</p>
                 <p>Mob. No: 9076966951</p>
               </div>
-              <div class="customer-info">
-                <h3>Bill To:</h3>
-                <p><strong>Name:</strong> ${customerData.name}</p>
-                <p><strong>Phone:</strong> ${customerData.phone}</p>
-                <p><strong>Address:</strong> ${customerData.address} </p>
+              <div class="info">
+                <div class="customer-info">
+                  <h3>Bill To:</h3>
+                  <p><strong>Name:</strong> ${customerData.name}</p>
+                  <p><strong>Phone:</strong> ${customerData.phone}</p>
+                  <p><strong>Address:</strong> ${customerData.address} </p>
+                </div>
+                <img id="insta" src="insta.png" alt="Logo" width="120" height="130"/>
               </div>
               <table>
                 <thead>
@@ -274,12 +277,19 @@ export default function BillingPage() {
       printWindow.document.close();
       printWindow.onload = () => {
         const logoImg = printWindow.document.getElementById('invoice-logo') as HTMLImageElement;
-        if(logoImg?.complete) {
-          printWindow.print();
-        } else {
-          logoImg.onload = () => {
+        const instaImg = printWindow.document.getElementById('insta') as HTMLImageElement;
+
+        const checkIfImagesLoaded = () => {
+          if (logoImg.complete && instaImg.complete) {
             printWindow.print();
           }
+        };
+
+        if(logoImg.complete && instaImg.complete) {
+          printWindow.print();
+        } else {
+          logoImg.onload = checkIfImagesLoaded;
+          instaImg.onload = checkIfImagesLoaded;
         }
       }
     }
