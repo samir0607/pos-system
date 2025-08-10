@@ -138,6 +138,15 @@ export default function DashboardPage() {
     );
   }
 
+  const formatDate = (ddmmyyyy: any) => {
+    const [day, month, year] = ddmmyyyy.split('/');
+    return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative overflow-hidden">
       {/* Animated Background Elements */}
@@ -305,10 +314,7 @@ export default function DashboardPage() {
                         className="text-xs text-white/70 text-center font-medium"
                         style={{ width: `${barWidth}px` }}
                       >
-                        {new Date(sale.date).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric'
-                        })}
+                        {formatDate(sale.date)}
                       </div>
                     );
                   })}
