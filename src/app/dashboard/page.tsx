@@ -321,9 +321,9 @@ export default function DashboardPage() {
                 </div>
                 <h2 className="text-2xl font-semibold text-white/90">Sales Trend</h2>
               </div>
-              <div className="h-80 overflow-y-auto">
-                <div className="relative min-h-[14rem]">
-                  <div className="flex items-end justify-center h-full space-x-1 overflow-auto px-4">
+              <div className="h-80 overflow-x-auto">
+                <div className="relative h-56">
+                  <div className="flex items-end justify-center h-full space-x-1 px-4">
                     {salesData?.salesByDate.map((sale, index) => {
                       const maxValue = Math.max(...(salesData.salesByDate.map(s => s.total)) || [1]);
                       const barHeightPercent = (sale.total / maxValue) * 80;
