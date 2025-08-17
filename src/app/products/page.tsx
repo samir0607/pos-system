@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { Edit, Trash2 } from 'lucide-react';
 
 interface Category {
   id: number;
@@ -374,13 +374,13 @@ export default function ProductsPage() {
                           }}
                           className="text-blue-400 hover:text-blue-300 mr-4 p-2 rounded-lg hover:bg-white/10 transition-all duration-200"
                         >
-                          <PencilIcon className="h-5 w-5" />
+                          <Edit className="h-5 w-5" />
                         </button>
                         <button
                           onClick={() => handleSupplierDelete(supplier.id.toString())}
                           className="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-white/10 transition-all duration-200"
                         >
-                          <TrashIcon className="h-5 w-5" />
+                          <Trash2 className="h-5 w-5" />
                         </button>
                       </td>
                     </tr>
@@ -519,13 +519,13 @@ export default function ProductsPage() {
                           }}
                           className="text-blue-400 hover:text-blue-300 mr-4 p-2 rounded-lg hover:bg-white/10 transition-all duration-200"
                         >
-                          <PencilIcon className="h-5 w-5" />
+                          <Edit className="h-5 w-5" />
                         </button>
                         <button
                           onClick={() => handleProductDelete(product.id.toString())}
                           className="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-white/10 transition-all duration-200"
                         >
-                          <TrashIcon className="h-5 w-5" />
+                          <Trash2 className="h-5 w-5" />
                         </button>
                       </td>
                     </tr>
