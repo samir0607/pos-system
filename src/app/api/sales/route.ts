@@ -4,7 +4,15 @@ import { supabase } from '@/lib/supabase';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { items, total_amount, customer_name, customer_phone, customer_address } = body;
+    const { 
+      items, 
+      subtotal,
+      discount_amount,
+      total_amount, 
+      customer_name, 
+      customer_phone, 
+      customer_address 
+    } = body;
 
     // Inventory validation: check if requested quantity is available for each item
     for (const item of items) {
@@ -27,6 +35,8 @@ export async function POST(request: Request) {
           customer_name,
           customer_phone,
           customer_address,
+          subtotal,
+          discount_amount,
           total_amount,
         },
       ])
@@ -39,9 +49,11 @@ export async function POST(request: Request) {
     const saleItems = items.map((item: any) => ({
       sale_id: sale.id,
       product_id: item.product_id,
-      quantity_sold: item.quantity_sold,
       sell_price: item.sell_price,
-      total_price: item.total_price,
+      unit_discount: item.unit_discount,
+      net_price: item.net_price,
+      quantity_sold: item.quantity_sold,
+      total_price: item.amount,
     }));
 
     const { error: itemsError } = await supabase

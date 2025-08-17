@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PlusIcon, MinusIcon } from '@heroicons/react/24/outline';
+import { TrashIcon } from '@heroicons/react/24/outline';
+import { toWords } from 'number-to-words'
 import toast from 'react-hot-toast';
 import ProtectedRoute from '../components/ProtectedRoute';
 
@@ -15,6 +16,7 @@ interface Product {
 interface CartItem {
   product: Product;
   quantity: number;
+  unitDiscount: number;
 }
 
 interface CustomerInfo {
@@ -23,18 +25,22 @@ interface CustomerInfo {
   address: string;
 }
 
+interface DerivedTotals {
+  subTotal: number;     
+  discount: number;        
+  total: number;
+}
+
 export default function BillingPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [total, setTotal] = useState(0);
+  const [derived, setDerived] = useState<DerivedTotals>({subTotal: 0, discount: 0, total: 0});
   const [search, setSearch] = useState('');
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: '',
     phone: '',
     address: ''
   });
-  const [discount, setDiscount] = useState('');
-  const [showCustomerForm, setShowCustomerForm] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -42,7 +48,7 @@ export default function BillingPage() {
 
   useEffect(() => {
     calculateTotal();
-  }, [cart, discount]);
+  }, [cart]);
 
   const fetchProducts = async () => {
     try {
@@ -50,27 +56,42 @@ export default function BillingPage() {
       const data = await response.json();
       setProducts(data);
     } catch (error) {
+      toast.dismiss();
       toast.error('Error fetching products');
     }
   };
 
   const calculateTotal = () => {
-    const newTotal = cart.reduce((sum, item) => sum + (item.product.sell_price * item.quantity), 0);
-    setTotal(newTotal - Number(discount || 0));
+    const subTotal = cart.reduce((sum, item) => sum + (item.product.sell_price * item.quantity) , 0);
+    const discount = cart.reduce((sum, item) => sum + (Number(item.unitDiscount || 0) * item.quantity), 0);
+    const total = Math.max(0,subTotal - discount);
+
+    setDerived({
+      subTotal: Number(subTotal.toFixed(2)),
+      discount: Number(discount.toFixed(2)),
+      total: Number(total.toFixed(2))
+    });
   };
 
   const addToCart = (product: Product) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.product.id === product.id);
       if (existingItem) {
+        if (existingItem.quantity + 1 > product.quantity) {
+          toast.dismiss();
+          toast.error('Not enough stock');
+          return prevCart;
+        }
         return prevCart.map(item =>
           item.product.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
-      return [...prevCart, { product, quantity: 1 }];
+      return [...prevCart, { product, quantity: 1, unitDiscount: 0 }];
     });
+    toast.dismiss();
+    toast.success('Added to cart successfully');
   };
 
   const removeFromCart = (productId: string) => {
@@ -80,56 +101,88 @@ export default function BillingPage() {
   const updateQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
     setCart(prevCart =>
-      prevCart.map(item =>
-        item.product.id === productId
-          ? { ...item, quantity: newQuantity }
-          : item
+      prevCart.map(item => {
+        if (item.product.id !== productId) return item;
+        const maxAllowed = item.product.quantity;
+        const qty = Math.min(newQuantity, maxAllowed);
+        if (newQuantity > maxAllowed) {
+          toast.dismiss();
+          toast.error(`Only ${maxAllowed} units available in stock`);
+        }
+        return { ...item, quantity: qty };
+        }
       )
     );
   };
 
+  const updateDiscount = (productId: string, newUnitDiscount: number) => {
+    setCart((prevCart) => 
+      prevCart.map((item) => item.product.id === productId ? {
+        ...item,
+        unitDiscount: Number(newUnitDiscount || 0)
+      } : item
+    ));
+  };
+  
   const handleCheckout = async () => {
     if (!customerInfo.name.trim() || !customerInfo.phone.trim()) {
+      toast.dismiss();
       toast.error('Please enter customer name and phone number');
       return;
     }
 
     try {
+      const payload = {
+        items: cart.map((item) => {
+          const price = Number(item.product.sell_price);
+          const unit_discount = Number(item.unitDiscount || 0);
+          const net_price = Math.max(0, price - unit_discount);
+          const amount = Number((net_price * item.quantity).toFixed(2));
+          return {
+            product_id: item.product.id,
+            quantity_sold: item.quantity,
+            sell_price: price,
+            unit_discount,
+            net_price,
+            amount,
+          };
+        }),
+        subtotal: Number(derived.subTotal.toFixed(2)),
+        discount_amount: Number(derived.discount.toFixed(2)),
+        total_amount: Number(derived.total.toFixed(2)),
+        customer_name: customerInfo.name,
+        customer_phone: customerInfo.phone,
+        customer_address: customerInfo.address
+      }; 
+
       const response = await fetch('/api/sales', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: cart.map(item => ({
-            product_id: item.product.id,
-            quantity_sold: item.quantity,
-            sell_price: item.product.sell_price,
-            total_price: item.product.sell_price * item.quantity
-          })),
-          total_amount: total,
-          customer_name: customerInfo.name,
-          customer_phone: customerInfo.phone,
-          customer_address: customerInfo.address
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
         const data = await response.json();
         const currentSaleId = data.id;
-        console.log("Sale response:", data); 
+
+        toast.dismiss();
         toast.success('Sale completed successfully');
         await fetchProducts();
+
         return currentSaleId; // Return success status
       } else {
+        toast.dismiss();
         toast.error('Error processing sale');
         return 0;
       }
     } catch (error) {
+      toast.dismiss();
       toast.error('Error processing sale');
       return 0;
     }
   };
 
-  const sendWhatsAppInvoice = (cartData: CartItem[], customerData: CustomerInfo, totalAmount: number, discount: string) => {
+  const sendWhatsAppInvoice = (cartData: CartItem[], customerData: CustomerInfo, derivedData: DerivedTotals) => {
     try {
       // Build itemized product list
       const itemsList = cartData.map((item, idx) =>
@@ -137,16 +190,13 @@ export default function BillingPage() {
       ).join("\n");
 
       // Create WhatsApp message
-      const message = `*GenZ Collection Invoice*\n\n` +
-        `*Customer:* ${customerData.name}\n` +
-        `*Phone:* ${customerData.phone}\n` +
-        `*Address:* ${customerData.address}\n` +
-        `*Date:* ${new Date().toLocaleDateString()}\n\n` +
-        `*Items:*\n${itemsList}\n\n` +
-        `*Discount:* ₹${Number(discount || 0).toFixed(2)}\n` +
-        `*Total Amount:* ₹${totalAmount.toFixed(2)}\n\n` +
-        `Thank you for shopping with us! \n` +
-        `For any queries, reply to this message.`;
+      const message = 
+        `Dear ${customerData.name},\n
+        \t Thank you for shopping with us \n\n
+        Date: ${new Date().toLocaleDateString()}\n\n  Items: \n${itemsList}\n\n
+        SubTotal: ₹${Number(derivedData.subTotal || 0).toFixed(2)}\n
+        Discount: ₹${Number(derivedData.discount || 0).toFixed(2)}\n
+        Total Amount: ₹${derivedData.total.toFixed(2)}\n\n Thank you for shopping with us! \n For any queries, reply to this message.`;
 
       // Format phone number (remove any non-digit characters and add country code if needed)
       let phoneNumber = customerData.phone.replace(/\D/g, '');
@@ -154,6 +204,7 @@ export default function BillingPage() {
         phoneNumber = '91' + phoneNumber;
       }
       if (phoneNumber.length < 10) {
+        toast.dismiss();
         toast.error('Invalid phone number format');
         return;
       }
@@ -162,24 +213,25 @@ export default function BillingPage() {
       console.log('WhatsApp URL:', whatsappUrl); // Debug log
       const newWindow = window.open(whatsappUrl, '_blank');
       if (!newWindow) {
+        toast.dismiss();
         toast.error('Popup blocked! Please allow popups for this site.');
       } else {
+        toast.dismiss();
         toast.success('WhatsApp opened! Please send the message.');
       }
     } catch (error) {
-      console.error('WhatsApp error:', error);
+      toast.dismiss();
       toast.error('Error opening WhatsApp');
     }
   };
 
   const convertToWords = (amount: number): string => {
-    const words = require('number-to-words');
     const integerPart = Math.floor(amount);
     const decimalPart = Math.round((amount - integerPart) * 100);
 
-    let result = words.toWords(integerPart) + ' rupees';
+    let result = toWords(integerPart) + ' rupees';
     if (decimalPart > 0) {
-      result += ' and ' + words.toWords(decimalPart) + ' paise';
+      result += ' and ' + toWords(decimalPart) + ' paise';
     }
 
     return result.charAt(0).toUpperCase() + result.slice(1);
@@ -188,12 +240,11 @@ export default function BillingPage() {
   const printInvoice = (
     cartData: CartItem[], 
     customerData: CustomerInfo, 
-    totalAmount: number, 
-    discount: string,
+    derivedData: DerivedTotals,
     saleId: number
   ) => {
     const printWindow = window.open('', '_blank');
-    const amountInWords = convertToWords(totalAmount);
+    const amountInWords = convertToWords(derivedData.total);
     if (printWindow) {
       const invoiceHTML = `
         <html>
@@ -218,7 +269,9 @@ export default function BillingPage() {
               .customer-info p { margin: 5px 0; }
               table { width: 100%; border-collapse: collapse; }
               th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
-              .total { text-align: right; margin-top: 20px; font-weight: bold; }
+              .total { margin-left: auto; max-width: 150px; text-align: right; margin-top: 10px;font-size: 14px; }
+              .row { display: flex; justify-content: space-between; }
+              .total .total-final { font-weight: bold; font-size: 16px; }
             </style>
           </head>
           <body>
@@ -247,26 +300,41 @@ export default function BillingPage() {
                 <thead>
                   <tr>
                     <th>Product</th>
+                    <th>Rate</th>
+                    <th>Discount</th>
+                    <th>Net Rate</th>
                     <th>Quantity</th>
-                    <th>Price</th>
-                    <th>Total</th>
+                    <th>Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   ${cartData.map(item => `
                     <tr>
                       <td>${item.product.name}</td>
-                      <td>${item.quantity}</td>
                       <td>₹${item.product.sell_price}</td>
-                      <td>₹${(item.product.sell_price * item.quantity).toFixed(2)}</td>
+                      <td>₹${item.unitDiscount}</td>
+                      <td>₹${item.product.sell_price - item.unitDiscount}</td>
+                      <td>${item.quantity}</td>
+                      <td>₹${((item.product.sell_price - item.unitDiscount) * item.quantity).toFixed(2)}</td>
                     </tr>
                   `).join('')}
                 </tbody>
               </table>
               <div class="total">
-                Discount: ₹${Number(discount).toFixed(2)}<br/>
-                Total: ₹${totalAmount.toFixed(2)}
+                <div class="row">
+                  <span>Subtotal:</span>
+                  <span>₹${Number(derivedData.subTotal).toFixed(2)}</span>
+                </div>
+                <div class="row">
+                  <span>Discount:</span>
+                  <span>₹${Number(derivedData.discount).toFixed(2)}</span>
+                </div>
+                <div class="row total-final">
+                  <span>Total:</span>
+                  <span>₹${derivedData.total.toFixed(2)}</span>
+                </div>
               </div>
+
               <h4>Amount In Words: </h4>
               <p> ${ amountInWords } </p>
             </div>
@@ -336,16 +404,8 @@ export default function BillingPage() {
               ))}
           </div>
         </div>
-
-        {/* Cart */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Current Cart</h2>
-          {cart.length === 0 ? (
-            <p className="text-gray-500">No items in cart</p>
-          ) : (
-            <>
-              {/* Customer Information Form */}
-              <div className="mb-6 p-4 border rounded bg-gray-50">
+        {/* Customer Information Form */}
+        <div className="mb-6 p-4 border rounded bg-gray-50">
                 <h3 className="font-semibold mb-3">Customer Information</h3>
                 <div className="space-y-3">
                   <div>
@@ -389,7 +449,13 @@ export default function BillingPage() {
                   </div>
                 </div>
               </div>
-
+        {/* Cart */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4">Cart</h2>
+          {cart.length === 0 ? (
+            <p className="text-gray-500">No items in cart</p>
+          ) : (
+            <>
               <div className="space-y-4">
                 {cart.map(item => (
                   <div key={item.product.id} className="flex items-center justify-between p-4 border rounded">
@@ -400,54 +466,56 @@ export default function BillingPage() {
                     <div className="flex items-center space-x-4">
                       <button
                         onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                        className="text-gray-600 hover:text-gray-800"
+                        className="text-xl text-gray-600 hover:text-gray-800"
                       >
-                        <MinusIcon className="h-5 w-5" />
+                        -
                       </button>
                       <span>{item.quantity}</span>
                       <button
                         onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                        className="text-gray-600 hover:text-gray-800"
+                        className="text-xl text-gray-600 hover:text-gray-800"
                       >
-                        <PlusIcon className="h-5 w-5" />
+                        +
                       </button>
+
                       <button
                         onClick={() => removeFromCart(item.product.id)}
-                        className="text-red-600 hover:text-red-800"
+                        className="text-xs text-red-600 hover:text-red-800"
                       >
-                        Remove
+                        <TrashIcon className="h-5 w-5" />
                       </button>
+                      <div className="flex flex-col space-y-1">
+                        <label className="text-xs text-gray-600">Discount</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max={item.product.sell_price}
+                          value={item.unitDiscount || ''}
+                          onChange={(e) => updateDiscount(item.product.id, parseFloat(e.target.value) || 0)}
+                          placeholder="₹0.00"
+                          className="w-20 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
               
-              <div className="mt-6 border-t pt-4">
-                <div className="flex items-center mb-4">
-                  <span className="mr-2 font-semibold">Discount:</span>
-                  <input
-                    type="number"
-                    value={discount}
-                    min={0}
-                    max={cart.reduce((sum, item) => sum + (item.product.sell_price * item.quantity), 0)}
-                    onChange={e => setDiscount(String(e.target.value))}
-                    className="w-24 px-2 py-1 border rounded"
-                  />
+                <div className="text-xs flex justify-between items-center mt-3">
+                  <span className="font-semibold">SubTotal:</span>
+                  <span>₹{derived.subTotal.toFixed(2)}</span>
                 </div>
+
+                <div className="text-xs flex justify-between items-center">
+                  <span className="font-semibold">Discount:</span>
+                  <span>₹{derived.discount.toFixed(2)}</span>
+                </div>
+
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-lg font-semibold">Total:</span>
-                  <span className="text-lg font-semibold">₹{total.toFixed(2)}</span>
+                  <span className="font-semibold">₹{derived.total.toFixed(2)}</span>
                 </div>
                 <div className="flex space-x-4">
-                  {/* <button
-                    onClick={() => {
-                      printInvoice(cart, customerInfo, total, discount, currentSaleId)}
-                    disabled={cart.length === 0}
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
-                  > */}
-                    {/* <PrinterIcon className="h-5 w-5 mr-2" />
-                    Print Invoice
-                  </button> */}
                   <button
                     onClick={async () => {
                       const currentSaleId = await handleCheckout();
@@ -455,20 +523,17 @@ export default function BillingPage() {
                         // Store cart data before clearing
                         const cartData = [...cart];
                         const customerData = { ...customerInfo };
-                        const totalAmount = total;
-                        const discountAmount = discount;
+                        const derivedData = {...derived};
                         
                         // Clear the cart and form
                         setCart([]);
                         setCustomerInfo({ name: '', phone: '', address: '' });
-                        setDiscount('');
-                        setShowCustomerForm(false);
-                        
-                        printInvoice(cartData, customerData, totalAmount, discountAmount, currentSaleId);
+
+                        printInvoice(cartData, customerData, derivedData, currentSaleId);
 
                         // Send WhatsApp with stored data
                         setTimeout(() => {
-                          sendWhatsAppInvoice(cartData, customerData, totalAmount, discount);
+                          sendWhatsAppInvoice(cartData, customerData, derivedData);
                         }, 100);
                       }
                     }}
@@ -478,7 +543,6 @@ export default function BillingPage() {
                   </button>
                   
                 </div>
-              </div>
             </>
           )}
         </div>
