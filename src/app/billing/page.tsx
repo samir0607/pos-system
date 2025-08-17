@@ -191,12 +191,16 @@ export default function BillingPage() {
 
       // Create WhatsApp message
       const message = 
-        `Dear ${customerData.name},\n
-        \t Thank you for shopping with us \n\n
-        Date: ${new Date().toLocaleDateString()}\n\n  Items: \n${itemsList}\n\n
-        SubTotal: ₹${Number(derivedData.subTotal || 0).toFixed(2)}\n
-        Discount: ₹${Number(derivedData.discount || 0).toFixed(2)}\n
-        Total Amount: ₹${derivedData.total.toFixed(2)}\n\n Thank you for shopping with us! \n For any queries, reply to this message.`;
+        `Dear ${customerData.name},
+          Thank you for shopping with us
+        Date: ${new Date().toLocaleDateString()}
+          
+        Items: \n${itemsList}\n
+        SubTotal: ₹${Number(derivedData.subTotal || 0).toFixed(2)}
+        Discount: ₹${Number(derivedData.discount || 0).toFixed(2)}
+        Total Amount: ₹${derivedData.total.toFixed(2)}\n
+        Thank you for shopping with us! 
+        For any queries, reply to this message.`;
 
       // Format phone number (remove any non-digit characters and add country code if needed)
       let phoneNumber = customerData.phone.replace(/\D/g, '');
@@ -361,193 +365,188 @@ export default function BillingPage() {
         }
       }
     }
-  };
+  }; 
 
   return (
     <ProtectedRoute>
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Billing System</h1>
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search products..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full md:w-1/2 px-4 py-2 border rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Products List */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Available Products</h2>
-          <div className="space-y-4">
-            {products
-              .filter(product => product.name.toLowerCase().includes(search.toLowerCase()))
-              .map(product => (
-                <div key={product.id} className="flex items-center justify-between p-4 border rounded">
-                  <div>
-                    <h3 className="font-medium">{product.name}</h3>
-                    <p className="text-gray-600">₹{product.sell_price}</p>
-                    <p className="text-sm text-gray-500">Quantity Remaining: {product.quantity}</p>
-                    {product.quantity === 0 && (
-                      <span className="text-xs text-red-600 font-semibold">Not Available</span>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => addToCart(product)}
-                    className={`px-4 py-2 rounded text-white ${product.quantity === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'}`}
-                    disabled={product.quantity === 0}
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-              ))}
-          </div>
-        </div>
-        {/* Customer Information Form */}
-        <div className="mb-6 p-4 border rounded bg-gray-50">
-                <h3 className="font-semibold mb-3">Customer Information</h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Customer Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={customerInfo.name}
-                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Enter customer name"
-                      className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      value={customerInfo.phone}
-                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
-                      placeholder="Enter phone number"
-                      className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Address *
-                    </label>
-                    <input
-                      type="tel"
-                      value={customerInfo.address}
-                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, address: e.target.value }))}
-                      placeholder="Enter phone number"
-                      className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-        {/* Cart */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Cart</h2>
-          {cart.length === 0 ? (
-            <p className="text-gray-500">No items in cart</p>
-          ) : (
-            <>
-              <div className="space-y-4">
-                {cart.map(item => (
-                  <div key={item.product.id} className="flex items-center justify-between p-4 border rounded">
+      <div className="min-h-[calc(100vh-64px)] bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900">
+        <div className="container mx-auto px-4 py-2">
+          <h1 className="text-xl font-bold mb-3 text-white drop-shadow-lg">Billing System</h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 h-80vh gap-6">
+          <div className="grid grid-rows-2 gap-3">
+          {/* Products List */}
+          <div className="bg-white/10 backdrop-blur-lg rounded-lg shadow-xl border border-white/20 p-4">
+            <h2 className="font-semibold mb-3 text-white">Available Products</h2>
+            
+            <div className="space-y-2">
+              {/* Search Bar */}
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full p-1 border rounded-xl bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder-white/70 shadow focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+              />
+              {products
+                .filter(product => product.name.toLowerCase().includes(search.toLowerCase()))
+                .slice(0,3)
+                .map(product => (
+                  <div key={product.id} className="flex items-center justify-between pt-1 pb-1 p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl hover:bg-white/15 transition-all duration-300">
                     <div>
-                      <h3 className="font-medium">{item.product.name}</h3>
-                      <p className="text-gray-600">₹{item.product.sell_price}</p>
+                      <h3 className="font-medium text-white">{product.name}</h3>
+                      <p className="text-gray-200">₹{product.sell_price}</p>
+                      <p className="text-sm text-gray-300">Quantity Remaining: {product.quantity}</p>
+                      {product.quantity === 0 && (
+                        <span className="text-xs text-red-400 font-semibold">Not Available</span>
+                      )}
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <button
-                        onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                        className="text-xl text-gray-600 hover:text-gray-800"
-                      >
-                        -
-                      </button>
-                      <span>{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                        className="text-xl text-gray-600 hover:text-gray-800"
-                      >
-                        +
-                      </button>
-
-                      <button
-                        onClick={() => removeFromCart(item.product.id)}
-                        className="text-xs text-red-600 hover:text-red-800"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
-                      <div className="flex flex-col space-y-1">
-                        <label className="text-xs text-gray-600">Discount</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max={item.product.sell_price}
-                          value={item.unitDiscount || ''}
-                          onChange={(e) => updateDiscount(item.product.id, parseFloat(e.target.value) || 0)}
-                          placeholder="₹0.00"
-                          className="w-20 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                    </div>
+                    <button
+                      onClick={() => addToCart(product)}
+                      className={`px-4 py-2 rounded-2xl text-white transition-all duration-300 ${
+                        product.quantity === 0 
+                          ? 'bg-gray-600/50 cursor-not-allowed backdrop-blur-sm' 
+                          : 'bg-blue-500/70 hover:bg-blue-500/90 backdrop-blur-sm shadow-lg hover:shadow-blue-500/25'
+                      }`}
+                      disabled={product.quantity === 0}
+                    >
+                      Add to Cart
+                    </button>
                   </div>
                 ))}
-              </div>
-              
-                <div className="text-xs flex justify-between items-center mt-3">
-                  <span className="font-semibold">SubTotal:</span>
-                  <span>₹{derived.subTotal.toFixed(2)}</span>
-                </div>
+            </div>
+          </div>
+          {/* Customer Information Form */}
+          <div className="max-h-60 mb-6 p-4 bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl">
+            <h3 className="font-semibold mb-3 text-white">Customer Information</h3>
+            <div className="space-y-3">
+                <input
+                  type="text"
+                  value={customerInfo.name}
+                  onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Enter customer name"
+                  className="w-full px-3 py-2 bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/70 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                  required
+                />
+                <input
+                  type="tel"
+                  value={customerInfo.phone}
+                  onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="Enter phone number"
+                  className="w-full px-3 py-2 bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/70 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                  required
+                />
+                <input
+                  type="tel"
+                  value={customerInfo.address}
+                  onChange={(e) => setCustomerInfo(prev => ({ ...prev, address: e.target.value }))}
+                  placeholder="Enter Address"
+                  className="w-full px-3 py-2 bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/70 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                  required
+                />
+            </div>
+          </div>
+          </div>
+          {/* Cart */}
+          <div className="bg-white/10 backdrop-blur-lg rounded-lg shadow-xl border border-white/20 p-6">
+            <h2 className="text-xl font-semibold mb-4 text-white">Cart</h2>
+            {cart.length === 0 ? (
+              <p className="text-gray-300">No items in cart</p>
+            ) : (
+              <>
+                <div className="space-y-4">
+                  {cart.map(item => (
+                    <div key={item.product.id} className="flex items-center justify-between p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/15 transition-all duration-300">
+                      <div>
+                        <h3 className="font-medium text-white">{item.product.name}</h3>
+                        <p className="text-gray-200">₹{item.product.sell_price}</p>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <button
+                          onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                          className="text-xl text-white hover:text-gray-300 bg-white/20 backdrop-blur-sm w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 hover:bg-white/30"
+                        >
+                          -
+                        </button>
+                        <span className="text-white font-medium">{item.quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                          className="text-xl text-white hover:text-gray-300 bg-white/20 backdrop-blur-sm w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 hover:bg-white/30"
+                        >
+                          +
+                        </button>
 
-                <div className="text-xs flex justify-between items-center">
-                  <span className="font-semibold">Discount:</span>
-                  <span>₹{derived.discount.toFixed(2)}</span>
+                        <button
+                          onClick={() => removeFromCart(item.product.id)}
+                          className="text-xs text-red-400 hover:text-red-300 bg-red-500/20 backdrop-blur-sm p-2 rounded-full transition-all duration-300 hover:bg-red-500/30"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                        <div className="flex flex-col space-y-1">
+                          <label className="text-xs text-gray-300">Discount</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max={item.product.sell_price}
+                            value={item.unitDiscount || ''}
+                            onChange={(e) => updateDiscount(item.product.id, parseFloat(e.target.value) || 0)}
+                            placeholder="₹0.00"
+                            className="w-20 px-2 py-1 text-sm bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/70 rounded focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+                
+                  <div className="text-xs flex justify-between items-center mt-3 text-gray-300">
+                    <span className="font-semibold">SubTotal:</span>
+                    <span>₹{derived.subTotal.toFixed(2)}</span>
+                  </div>
 
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-lg font-semibold">Total:</span>
-                  <span className="font-semibold">₹{derived.total.toFixed(2)}</span>
-                </div>
-                <div className="flex space-x-4">
-                  <button
-                    onClick={async () => {
-                      const currentSaleId = await handleCheckout();
-                      if (currentSaleId!=0) {
-                        // Store cart data before clearing
-                        const cartData = [...cart];
-                        const customerData = { ...customerInfo };
-                        const derivedData = {...derived};
-                        
-                        // Clear the cart and form
-                        setCart([]);
-                        setCustomerInfo({ name: '', phone: '', address: '' });
+                  <div className="text-xs flex justify-between items-center text-gray-300">
+                    <span className="font-semibold">Discount:</span>
+                    <span>₹{derived.discount.toFixed(2)}</span>
+                  </div>
 
-                        printInvoice(cartData, customerData, derivedData, currentSaleId);
+                  <div className="flex justify-between items-center mb-4 text-white">
+                    <span className="text-lg font-semibold">Total:</span>
+                    <span className="font-semibold text-xl">₹{derived.total.toFixed(2)}</span>
+                  </div>
+                  <div className="flex space-x-4">
+                    <button
+                      onClick={async () => {
+                        const currentSaleId = await handleCheckout();
+                        if (currentSaleId!=0) {
+                          // Store cart data before clearing
+                          const cartData = [...cart];
+                          const customerData = { ...customerInfo };
+                          const derivedData = {...derived};
+                          
+                          // Clear the cart and form
+                          setCart([]);
+                          setCustomerInfo({ name: '', phone: '', address: '' });
 
-                        // Send WhatsApp with stored data
-                        setTimeout(() => {
-                          sendWhatsAppInvoice(cartData, customerData, derivedData);
-                        }, 100);
-                      }
-                    }}
-                    className="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center justify-center"
-                  >
-                    📱 Checkout
-                  </button>
-                  
-                </div>
-            </>
-          )}
+                          printInvoice(cartData, customerData, derivedData, currentSaleId);
+
+                          // Send WhatsApp with stored data
+                          setTimeout(() => {
+                            sendWhatsAppInvoice(cartData, customerData, derivedData);
+                          }, 100);
+                        }
+                      }}
+                      className="flex-1 bg-green-500/70 backdrop-blur-sm text-white px-4 py-2 rounded-xl hover:bg-green-500/90 flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-green-500/25"
+                    >
+                      📱 Checkout
+                    </button>
+                    
+                  </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+      </div>
     </ProtectedRoute>
   );
-} 
+}
